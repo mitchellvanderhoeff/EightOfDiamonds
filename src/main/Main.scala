@@ -1,15 +1,16 @@
 package main
 
-import util.Random
+
+class Countable[T](val element:T, var count:Int) {
+  def this(element:T) = this(element, 0)
+  def plusone() {
+    count += 1
+  }
+}
 
 object Main extends App {
   override def main(args: Array[String]) {
-    calculate(
-      "7d;5d",
-      "ax;kx",
-      "ax;xd;xd;xx;xx",
-      50000)
-//    testFlushes()
+    calculateScoreDistribution(30000)
   }
 
 
@@ -24,20 +25,19 @@ object Main extends App {
       val community = Deck.search(communitystring)
       val playerscore = Score(player ::: community)
       val foescore = Score(foe ::: community)
-      println(ListDisplay(player)+" - "+ListDisplay(community)+" - "+ListDisplay(foe))
+//      println(ListDisplay(player)+" - "+ListDisplay(community)+" - "+ListDisplay(foe))
       MList.compareByElements[Int](playerscore, foescore) match {
         case -1 =>
           foepoints += 1
-          println("player "+ListDisplay(playerscore)+", foe* "+ListDisplay(foescore))
+//          println("player "+ListDisplay(playerscore)+", foe* "+ListDisplay(foescore))
         case 1 =>
           playerpoints += 1
-          println("player* "+ListDisplay(playerscore)+", foe "+ListDisplay(foescore))
-        case _0=>
-          println("player "+ListDisplay(playerscore)+", foe "+ListDisplay(foescore))
+//          println("player* "+ListDisplay(playerscore)+", foe "+ListDisplay(foescore))
+        case 0=>
+//          println("player "+ListDisplay(playerscore)+", foe "+ListDisplay(foescore))
       }
-//      if (i % (numtrial / 10) == 0)
-//        print("-")
-      println()
+      if (i % (numtrial / 10) == 0)
+        print("-")
     }
     println("|")
     val playerwinprob = "%1.5f".format(playerpoints.toFloat / numtrial.toFloat)
@@ -63,6 +63,25 @@ object Main extends App {
     }
     println("|")
     println("result: " + n + "/" + total + ", p=" + (n.toFloat / total.toFloat) * 100 + "%")
+  }
+
+  def calculateScoreDistribution(numtrial:Int) {
+    var distribution:Array[Countable[Int]] = (0 to 8).map(new Countable[Int](_)).toArray
+    print("running "+numtrial+" tests |")
+    for(i <- 1 to numtrial) {
+      Deck.shuffle()
+      val cards = Deck.deal(7)
+      distribution(Score(cards)(0)).plusone()
+      if (i % (numtrial / 10) == 0)
+        print("-")
+    }
+    println("|")
+    println("[distribution]")
+    for(kv <- distribution.reverse) {
+      val probability = "%1.3f".format((kv.count.toFloat) / (numtrial.toFloat) * 100) + "%"
+      println("score "+kv.element+" ["+kv.count+"/"+numtrial+"] => ("+probability+")")
+    }
+    println("total ("+(distribution.map(countable => countable.count).sum)+")")
   }
 
 

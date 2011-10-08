@@ -27,7 +27,7 @@ object Deck {
   var lookinguprandom = false
 
   def shuffle() {
-    cards = Random.shuffle(ordereddeck)
+    cards = Random.shuffle(Random.shuffle(ordereddeck))
   }
 
   def deal(amount:Int):List[Card] = {
