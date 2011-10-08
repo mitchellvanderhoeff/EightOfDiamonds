@@ -24,6 +24,7 @@ object Deck {
     )
   var cards:List[Card] = ordereddeck
   var lastlookup:(String, String) = ("","")
+  var lookinguprandom = false
 
   def shuffle() {
     cards = Random.shuffle(ordereddeck)
@@ -36,19 +37,18 @@ object Deck {
   }
 
   private def removecard(card:Card):Card = {
-    cards = cards.filter(_ != card)
+    cards = Random.shuffle(cards.diff(List(card)))
     card
   }
 
   private def lookup(f:(Card => Boolean)):Card = {
     val fetched = cards.find(c => f(c))
     if(fetched.isEmpty)
-      throw new IllegalArgumentException("card not found. last lookup: "+lastlookup)
-    return removecard(removecard(fetched.get))
+      throw new IllegalArgumentException("card not found")
+    removecard(fetched.get)
   }
 
   private def findcard(rs:(String, String)):Card = {
-    lastlookup = rs
     rs match {
       case ("X", "x") =>
         lookup(c => true)
@@ -71,7 +71,7 @@ object Deck {
       .map(findcard(_))
       .toList
     val randoms = requestedcards
-      .diff(nonrandoms)
+      .filter(rs => rs._1 == "X" || rs._2 == "x")
       .map(findcard(_))
       .toList
     val allcards = nonrandoms ::: randoms
@@ -80,7 +80,7 @@ object Deck {
   }
 
   override def toString = {
-    cards.toString
+    cards.toString()
   }
 }
 

@@ -15,31 +15,36 @@ object Score {
     checkhighcard _
   )
 
+  val possiblestraights = (-1 to 9).map(
+    a => (0 to 4).map (
+       b => a + b
+    )
+  )
+
   def apply(cards:List[Card]):List[Int] = {
     val cardsdata = buildcardsdata(cards)
-    val results:List[List[Int]] = functions.flatMap(_(cardsdata))
-    results(results.map(_(0)).indexOf(results.map(_(0)).max))
-  }
-
-  def getfrequencies(values:List[Any]):List[(Any, Int)] = {
-    values.distinct.map((value) => (value, values.count(_ == value)))
+    var score:Option[List[Int]] = None
+    var i = 0
+    while(score.isEmpty) {
+      score = functions(i)(cardsdata)
+      i += 1
+    }
+    score.get
   }
 
   def getvalues(cards:List[Card]):List[Int] = cards.map(_.rank.index).sortWith(_ > _)
 
   def getsequence(values:List[Int]):Option[Int] = {
-    val revvalues = values.reverse
+    val ordered = values.reverse
     val length = values.length
     val identifiers = (0.to(length-5))
-      .map(checkindex => revvalues
+      .map(checkindex => ordered
         .slice(checkindex, 5+checkindex)
-        .foldLeft(revvalues(checkindex)-1)
-        ((a, b) => if(a + 1 == b) b else Int.MinValue)
-    )
-//    println("     revvalues = "+revvalues+" length="+length+", identifiers = "+identifiers.map(x => if(x < 0) -1 else x))
-    val foundindex = identifiers.lastIndexWhere(_ >= 0)
+      ).map(possiblestraights.contains(_))
+//    println("     revvalues = "+revvalues+" length="+length+", identifiers = "+identifiers)
+    val foundindex = identifiers.lastIndexWhere(boolean => boolean)
     if(foundindex != -1) {
-      Some(revvalues(foundindex)+1)
+      Some(ordered(foundindex)+1)
     } else {
       if(values.contains(12))
         getsequence(values
@@ -52,16 +57,16 @@ object Score {
   }
 
   def getsamesuits(cards:List[Card]):Option[Suit] = {
-    val flushsuit = getfrequencies(cards.map(_.suit)).find(_._2 == 5)
+    val flushsuit = FrequencyList[Suit](cards.map(_.suit)).find(_._2 >= 5)
     if(flushsuit.isDefined)
-      Some(flushsuit.get._1.asInstanceOf[Suit])
+      Some(flushsuit.get._1)
     else
       None
   }
 
   def buildcardsdata(cards:List[Card]):CardsData = {
     val values:List[Int] = getvalues(cards)
-    val frequencies:List[(Int, Int)] = getfrequencies(values).asInstanceOf[List[(Int, Int)]]
+    val frequencies:List[(Int, Int)] = FrequencyList[Int](values)
     val sequence:Option[Int] = getsequence(values)
     val samesuits:Option[Suit] = getsamesuits(cards)
     CardsData(values, frequencies, sequence, samesuits)
@@ -77,7 +82,7 @@ object Score {
       .map(_._1)
     if (quads.size > 0) {
       val value:Int = quads.max
-      Some(List(7, value) ::: cd.values.filter(_ != value))
+      Some(List(7, value) ::: cd.values.diff(List(value)))
     } else None
   }
 
@@ -85,11 +90,16 @@ object Score {
   def checkfullhouse(cd:CardsData):Option[List[Int]] = {
     var trips = -1; var pair = -1
     cd.frequencies.foreach { vf =>
-        if (vf._2 == 3) trips = List(trips, vf._1).max
-        if (vf._2 == 2) pair = List(pair, vf._1).max
+        if (vf._2 == 3) {
+          trips = List(trips, vf._1).max
+          if(trips >= 0 && vf._1 != trips)
+            pair =  List(trips, vf._1).min
+        }
+        else if (vf._2 == 2)
+          pair = List(pair, vf._1).max
     }
     if (trips >= 0 && pair >= 0)
-      Some(List(6, trips, pair) ::: cd.values.filter(!List(trips, pair).contains(_)))
+      Some(List(6, trips, pair) ::: cd.values.diff(List(trips, pair)))
     else
       None
   }
