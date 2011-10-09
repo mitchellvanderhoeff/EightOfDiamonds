@@ -1,5 +1,12 @@
 package main
 
+class Countable[T](val content:T = null, var count:Int = 0) {
+  def plusone() {
+    count += 1
+  }
+  override def toString = content.toString + ": " + count.toString
+}
+
 object Test {
  def calculateScore(f:List[Int] => Boolean, tests:Int) {
     var n = 0;

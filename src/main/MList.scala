@@ -3,14 +3,7 @@ package main
 import collection.LinearSeq
 
 object MList {
-  def compareByElements[T](one:List[T], other:List[T])(implicit numeric:Numeric[T]):Int = {
-    for(i <- 0 to (List(one.length, other.length).max - 1)) {
-      val difference = numeric.compare(one(i), other(i))
-      if(difference != 0)
-        return difference
-    }
-    0
-  }
+
 }
 
 object ListDisplay {

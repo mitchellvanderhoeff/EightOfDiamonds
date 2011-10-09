@@ -66,9 +66,9 @@ object Deck {
     }
   }
 
-  def search(requests:String):List[Card] = {
-    val requestedcards = requests
-      .split(";")
+  def search(request:String):List[Card] = {
+    val requestedcards = request
+      .split(" ")
       .map(req => req.splitAt(1))
       .map(rs => (rs._1.toUpperCase, rs._2.toLowerCase))
     val nonrandoms = requestedcards
