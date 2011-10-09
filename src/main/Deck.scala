@@ -4,14 +4,19 @@ import util.Random
 
 case class Rank(value:String, index:Int) {
   override def toString = value
+  def ==(other:Rank) = (value == other.value)
 }
 case class Suit(value:String) {
   override def toString = value
+  def ==(other:Suit) = (value == other.value)
 }
 case class Card(rank:Rank, suit:Suit) {
   override def toString = {
     rank.toString + suit.toString
   }
+  def index = rank.index
+  def lowaceindex:Int = if(index == 12) -1 else index
+  def ==(other:Card) = (suit == other.suit && rank == other.rank)
 }
 
 

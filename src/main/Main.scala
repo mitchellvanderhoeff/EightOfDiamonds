@@ -6,12 +6,18 @@ class Countable[T](val element:T, var count:Int) {
   def plusone() {
     count += 1
   }
+  override def toString = element.toString + ": " + count.toString
 }
+
 
 object Main extends App {
   override def main(args: Array[String]) {
-    calculateScoreDistribution(30000)
+//    calculateScoreDistribution(400000)
+//    testFlushes()
+//    println
+    testStraights()
   }
+
 
 
   def calculate(playerstring:String, foestring:String, communitystring:String, numtrial:Int):Float = {
@@ -66,6 +72,17 @@ object Main extends App {
   }
 
   def calculateScoreDistribution(numtrial:Int) {
+    val checkpercentages:Map[Int, Double] = Map(
+    8 -> 0.0311,
+    7 -> 0.168,
+    6 -> 2.60,
+    5 -> 3.03,
+    4 -> 4.62,
+    3 -> 4.82,
+    2 -> 23.5,
+    1 -> 43.8,
+    0 -> 17.4)
+
     var distribution:Array[Countable[Int]] = (0 to 8).map(new Countable[Int](_)).toArray
     print("running "+numtrial+" tests |")
     for(i <- 1 to numtrial) {
@@ -78,8 +95,10 @@ object Main extends App {
     println("|")
     println("[distribution]")
     for(kv <- distribution.reverse) {
-      val probability = "%1.3f".format((kv.count.toFloat) / (numtrial.toFloat) * 100) + "%"
-      println("score "+kv.element+" ["+kv.count+"/"+numtrial+"] => ("+probability+")")
+      val percentage = (kv.count.toFloat) / (numtrial.toFloat) * 100
+      val percentagediff = percentage - checkpercentages(kv.element)
+      val sign = if(percentagediff > 0) "+" else ""
+      println("score "+kv.element+" => "+"%1.3f".format(percentage)+"% ("+sign+"%1.3f".format(percentagediff)+"%)")
     }
     println("total ("+(distribution.map(countable => countable.count).sum)+")")
   }
@@ -108,7 +127,7 @@ object Main extends App {
 
   def testStraights() {
     val straights = List(
-      "ad;2c;3h;4h;5c;kh;as",
+      "3x;3x;4x;5x;6x;7x;8x",
       "4c;5h;td;jc;qh;kh;as",
       "4c;5h;6d;7c;8h;kh;as",
       "2c;th;3d;4c;5h;kh;as")
@@ -117,7 +136,7 @@ object Main extends App {
         Deck.shuffle()
         val cards = Deck.search(request)
         val score = Score(cards)
-        println(cards + "; Score: " + score)
+        println(ListDisplay(cards) + " => " + ListDisplay(score))
     }
   }
 
@@ -132,7 +151,7 @@ def testFlushes() {
         Deck.shuffle()
         val cards = Deck.search(request)
         val score = Score(cards)
-        println(cards + "; Score: " + score)
+        println(ListDisplay(cards) + " => " + ListDisplay(score))
     }
   }
 }
