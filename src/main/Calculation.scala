@@ -1,9 +1,9 @@
 package main
 
 
-class ScoreOrdering extends Ordering[Player] {
+object ScoreOrdering extends Ordering[Player] {
   def compare(a: Player, b: Player):Int = {
-    val x = a.scorecards; val y = b.scorecards
+    val x = a.score; val y = b.score
     for(i <- 0 to (List(x.length, y.length).max - 1)) {
       val comparison = x(i).compare(y(i))
       if(comparison != 0)
@@ -13,55 +13,48 @@ class ScoreOrdering extends Ordering[Player] {
   }
 }
 
-class CardString(val string:String, val tail:CardString = null) {
-  def toList:List[CardString] = if(tail == null) List(this) else tail.toList ++ List(this)
-
-  def vs(newstring:String):CardString = new HandString(newstring, this)
-  def on(newstring:String):CardString = new CommunityString(newstring, this)
-
-  implicit def string2handstring(req: String): HandString = {
-    new HandString(req)
+object CardSlotOrdering extends Ordering[CardSlot] {
+  def compare(a: CardSlot, b: CardSlot):Int = {
+    val astr = a.rawrequest.toLowerCase
+    val bstr = b.rawrequest.toLowerCase
+    bstr.count(_ == 'x').compare(astr.count(_ == 'x'))
   }
-
-  override def toString:String = string
 }
 
-class Player(val handrequest:String, var community:List[Card] = List.empty, var points:Int = 0) {
-  def scorecards:List[Int] =
-    Score(Deck.search(handrequest) ::: community)
+class Player(val handrequest:String, val communityslots:Array[CardSlot], var points:Int = 0) {
+  val handreqlist = handrequest.split(" ")
+  val handslots:Array[CardSlot] = Array.tabulate[CardSlot](handreqlist.length)(i => new CardSlot(handreqlist(i)))
+  def score:List[Int] =
+    Score((handslots ++ communityslots)
+      .map(_.content)
+      .toList)
   def addpoint {
     points += 1
   }
-  override def toString:String = handrequest
+  override def toString:String = handrequest + ": " + points
 }
-class HandString(string:String, tail:CardString = null) extends CardString(string, tail)
-class CommunityString(string:String, tail:CardString = null) extends CardString(string, tail)
 
 
 object Calculation {
-  def player(string:String):CardString = new CardString(string)
-
-  val scoreordering = new ScoreOrdering
-
-  def calculate(request:CardString, numtrial:Int) = {
-    val requestlist = request.toList
-    val players:List[Player] = requestlist
-      .filter(cs => cs.isInstanceOf[HandString])
-      .map(hs => new Player(hs.toString))
-    val communityrequest = requestlist.find(cs => cs.isInstanceOf[CommunityString]).get
+  def calculate(playerrequests:List[String], communityrequest:String, numtrial:Int) = {
+    val communityreqlist = communityrequest.split(" ")
+    val communityslots:Array[CardSlot] = Array.tabulate[CardSlot](communityreqlist.length)(i => new CardSlot(communityreqlist(i)))
+    val players:List[Player] = playerrequests
+      .map(hs => new Player(hs, communityslots))
+    val playerslots:Array[CardSlot] = players.flatMap(player => player.handslots).toArray
+    val totalslotssorted:Array[CardSlot] = (playerslots ++ communityslots).sorted(CardSlotOrdering)
     print("running "+numtrial+" tests |")
     for(i <- 0 to numtrial) {
       Deck.shuffle()
-      val communitycards = Deck.search(communityrequest.toString)
-      players.foreach(_.community = communitycards)
-      players.max(scoreordering).addpoint
+      totalslotssorted.foreach(cardslot => Deck.fillslot(cardslot))
+      players.max(ScoreOrdering).addpoint
       if (i % (numtrial / 10) == 0)
         print("-")
     }
     println("|")
     val playerwinprob = "%1.5f".format(players.head.points.toFloat / numtrial.toFloat)
     val odds = "%1.4f".format((numtrial - players.head.points).toFloat / players.head.points.toFloat)
-    print("player "+requestlist.head+"  - community "+communityrequest+" - enemies "+players.drop(1).mkString(" "))
+    print("player "+playerrequests.head+"  - community "+communityrequest+" - enemies "+players.drop(1).mkString(" "))
     println("p="+playerwinprob+", odds: "+odds+" to 1")
   }
 }
