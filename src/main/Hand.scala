@@ -16,7 +16,12 @@ case class Hand(cards:List[Card]) {
 
   val kickers:List[Int] = values.reverse
 
-  val frequencies:List[(Int, Int)] = FrequencyList[Int](values)
+  val frequencies:List[(Int, Int)] = {
+    cards
+      .map(card => card.index)
+      .distinct
+      .map(index => (index, cards.count(_.index == index)))
+  }
 
   private def sliceByFives(manycards:List[Card]):List[List[Card]] = {
      (0 to (manycards.length-5))
@@ -42,21 +47,26 @@ case class Hand(cards:List[Card]) {
   val straights:List[List[Card]] = {
     val slices = sliceByFives(cards)
     val lowaceslices = sliceByFives(cards.sortBy(_.lowaceindex))
-    val result = lowaceslices.map(returnlowacestraight(_)) ::: slices.map(returnstraight(_))
+    val result = lowaceslices.map(returnlowacestraight(_)) ++ slices.map(returnstraight(_))
     result.filter(!_.isEmpty)
   }
 
-  val flushes:List[List[Card]] = {
-    val flushsuit = FrequencyList[Suit](cards.map(_.suit)).find(_._2 >= 5)
-    if(flushsuit.isDefined)
-      sliceByFives(cards
-        .filter(_.suit.value == flushsuit.get._1.value)
-        .sortBy(card => card.index))
+  private def returnflush(fivecards:List[Card]):List[Card] = {
+    if(fivecards.forall(card => card.suit == fivecards.head.suit))
+      fivecards
     else
       List.empty
   }
 
+  val flushes:List[List[Card]] = {
+      sliceByFives(cards.sortBy(card => card.suit.value))
+        .map(fivecards => fivecards
+          .sortBy(card => card.index))
+        .map(fivecards => returnflush(fivecards))
+        .filter(fivecards => !fivecards.isEmpty).sortBy(_(0).index)
+  }
+
   val straightflushes:List[List[Card]] = {
-    (flushes.map(returnlowacestraight(_)) ::: flushes.map(returnstraight(_))).filter(!_.isEmpty)
+    (flushes.map(returnlowacestraight(_)) ++ flushes.map(returnstraight(_))).filter(!_.isEmpty)
   }
 }

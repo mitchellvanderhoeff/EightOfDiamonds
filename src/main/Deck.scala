@@ -22,25 +22,20 @@ case class Card(rank:Rank, suit:Suit) {
 }
 
 
-
-class CardSlot(val rawrequest:String, var content:Card=null) {
-  val request = rawrequest.splitAt(1)
-  def fill(card:Card) {content = card}
-}
-
-
 object Deck {
   val ranks = List("2","3","4","5","6","7","8","9","T","J","Q","K","A")
   val suits = List("s","h","c","d")
   val zippedranks = ranks.zipWithIndex
+  val zippedsuits = suits.zipWithIndex
   val ordereddeck = suits.flatMap((suit) =>
       zippedranks.map(ri => Card(Rank(ri._1, ri._2), Suit(suit)))
     )
   var cards:List[Card] = ordereddeck
   var lastlookup:(String, String) = ("","")
+  var lookinguprandom = false
 
   def shuffle() {
-    cards = Random.shuffle(ordereddeck)
+    cards = Random.shuffle(Random.shuffle(ordereddeck))
   }
 
   def deal(amount:Int):List[Card] = {
@@ -50,33 +45,40 @@ object Deck {
   }
 
   private def removecard(card:Card):Card = {
-    cards = cards.filterNot(_ == card)
+    cards = cards.filterNot(card == _)
     card
   }
 
-  private def lookup(f:(Card => Boolean)):Card = {
-    val fetched = cards.filter(c => f(c))
+  def lookup(f:(Card => Boolean)):Card = {
+    val fetched = cards.filter(f(_))
     if(fetched.isEmpty)
-      throw new IllegalArgumentException("card not found, request was "+lastlookup+", cards="+ListDisplay(cards))
-    removecard(Random.shuffle(fetched).head)
+      throw new RuntimeException("card not found")
+    val fetchedcard = fetched(Random.nextInt(fetched.length))
+    removecard(fetchedcard)
   }
 
-  def fillslot(cardslot:CardSlot):CardSlot =  {
-    val rs = cardslot.request
-    lastlookup = rs
-    cardslot.fill(
-      rs match {
+  private def findcard(rs:(String, String)):Card = {
+    rs match {
       case ("X", "x") =>
         Deck.deal(1)(0)
-      case ("X", _) =>
-        lookup(c => c.suit == rs._2)
-      case (_, "x") =>
-        lookup(c => c.rank == rs._1)
-      case (_, _) =>
-        lookup(c => c.rank == rs._1
-                 && c.suit == rs._2)
-    })
-    cardslot
+      case ("X", checksuit) =>
+        lookup(c => c.suit == checksuit)
+      case (checkrank, "x") =>
+        lookup(c => c.rank == checkrank)
+      case (checkrank, checksuit) =>
+        lookup(c => c.rank == checkrank
+                 && c.suit == checksuit)
+    }
+  }
+
+  def search(request:String):List[Card] = {
+    val requestedcards = request
+      .split(" ")
+      .map(req => req.splitAt(1))
+      .map(rs => (rs._1.toUpperCase, rs._2.toLowerCase))
+      .map(rs => findcard(rs))
+    cards = cards.diff(requestedcards)
+    requestedcards.toList
   }
 
   override def toString = {
