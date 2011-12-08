@@ -1,7 +1,7 @@
 package main
 
 object Score {
-  val checkfunctions =  List(
+  val checkfunctions = List(
     checkstraightflush _,
     checkquads _,
     checkfullhouse _,
@@ -13,18 +13,13 @@ object Score {
     checkhighcard _
   )
 
-  def checkie(hand:Hand):Option[List[Int]] = {
-    println("this is just a check")
-    None
-  }
-
   def apply(cards:List[Card]):List[Int] = {
     val hand = new Hand(cards.sortBy(card => card.index))
-    for(i <- 0 to 8) {
-      val score = checkfunctions(i)(hand)
+    checkfunctions.foreach { function =>
+      val score = function(hand)
       if(score.isDefined) return score.get
     }
-    throw new IllegalArgumentException("illegal card combination: "+cards)
+    throw new RuntimeException("illegal card combination: "+cards)
     List.empty
   }
 
@@ -40,7 +35,7 @@ object Score {
       .find(_._2 == 4)
     if (quads.isDefined) {
       val value:Int = quads.get._1
-      Some(List(7, value) ::: hand.values.diff(List(value)))
+      Some(List(7, value) ::: hand.values.filterNot(_ == value))
     } else None
   }
 
@@ -75,8 +70,8 @@ object Score {
       .filter(_._2 == 3)
       .map(_._1)
     if (trips.size > 0) {
-      val highesttrips = trips.max
-      Some(List(3, highesttrips) ::: hand.kickers.diff(List(highesttrips)))
+      val maxtrips = trips.max
+      Some(List(3, maxtrips) ::: hand.kickers.filterNot(_ == maxtrips))
     } else None
   }
 
@@ -85,9 +80,10 @@ object Score {
       .filter(_._2 == 2)
       .map(_._1)
       .sorted
+      .reverse
     if (pairs.size >= 2) {
       val twopairs = pairs.take(2)
-      Some(List(2) ::: twopairs ::: hand.kickers.diff(twopairs))
+      Some(List(2) ++ twopairs ++ hand.kickers.filterNot(twopairs.contains(_)))
     } else None
   }
 
@@ -96,9 +92,12 @@ object Score {
       .filter(_._2 == 2)
       .map(_._1)
     if (pairs.size == 1) {
-      val pair = pairs.head
-      Some(List(1, pair) ::: hand.kickers.diff(List(pair)))
-    } else None
+      val pair = pairs.max
+      return Some(List(1, pair) ++ hand.kickers.filterNot(_ == pair))
+    }
+    if(pairs.size > 1)
+        throw new RuntimeException("Score check failed, twopair/trips check not executed")
+    None
   }
 
   def checkhighcard(hand:Hand):Option[List[Int]] = {

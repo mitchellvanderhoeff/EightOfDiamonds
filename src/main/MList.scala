@@ -1,11 +1,5 @@
 package main
 
-import collection.LinearSeq
-
-object MList {
-
-}
-
 object ListDisplay {
   def apply(list:List[Any]):String = list.mkString("["," ","]")
 }
