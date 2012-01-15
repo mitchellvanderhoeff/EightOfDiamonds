@@ -1,6 +1,9 @@
 package main
 
-
+/**
+ * This is necessary to compare scores to each other. It compares two scores element by element until it finds one higher than the other
+ *
+ */
 object ScoreOrdering extends Ordering[Player] {
   def compare(a: Player, b: Player):Int = {
     val x = a.score; val y = b.score
@@ -13,36 +16,63 @@ object ScoreOrdering extends Ordering[Player] {
   }
 }
 
-class Player(val handrequest:String, var community:List[Card]=null, var points:Int = 0) {
-  def score:List[Int] =
-    Score(Deck.search(handrequest) ++ community)
+/**
+ * This object stores the player hand, the community cards and the amount of times won from the other players.
+ */
+
+class Player(val handRequest:String, var hand:List[Option[Card]]=List.empty, var community:List[Option[Card]]=List.empty, var score:List[Int] = List.empty, var points:Int = 0) {
+  def setCommunity(newCommunity:List[Option[Card]]) {
+    community = newCommunity
+  }
+
+  def fetchHand() {
+    hand = Deck.search(handRequest)                                         // Search for your hand in the deck
+  }
+
+  def calculateScore() {
+    score = Score(hand.map(op => op.get) ++ community.map(op => op.get))
+  }
+
   def addpoint() {
     points += 1
   }
-  override def toString:String = handrequest
+  override def toString:String = handRequest
 }
 
 object Calculate {
   def apply(playerrequests:List[String], communityrequest:String, numtrial:Int) = {
     val players:List[Player] = playerrequests
-      .map(hs => new Player(hs))
+      .map(request => new Player(request))                              // Make a new player for each playerrequest, a string describing the requested hand for each player.
+    var ties:Int = 0
+    println("community ("+communityrequest+")")
     print("running "+numtrial+" tests |")
     for(i <- 0 to numtrial) {
-      Deck.shuffle()
-      try {
-        val communitycards = Deck.search(communityrequest)
-        players.foreach(_.community = communitycards)
-        players.max(ScoreOrdering).addpoint()
-      } catch {
-        case _ =>
+      var communitycards:List[Option[Card]] = List.empty
+      while(communitycards.isEmpty ||                                   // While at least one of the cards has not been found because it has been taken already..
+            communitycards.exists(op => op.isEmpty) ||
+            players.exists(player => player.hand.exists(op => op.isEmpty))) {
+        Deck.shuffle()
+        communitycards = Deck.search(communityrequest)                  // ..search for the cards again
+        players.foreach{player =>
+          player.fetchHand()
+          player.setCommunity(communitycards)
+        }
       }
-      if (i % (numtrial / 10) == 0)
+      players.foreach(player => player.calculateScore())
+      val bestplayer = players.max(ScoreOrdering)                       // The player with the highest score
+      val playerscores = players.map(player => player.score)
+      if(playerscores.count(score => score == bestplayer.score) > 1) {  // If this player shares the same score as at least one other player..
+            ties += 1                                                   // ..it evidently becomes a tie
+      } else {
+        bestplayer.addpoint()                                           // Otherwise, the best player earns a point
+      }
+      if (i % (numtrial / 30) == 0)
         print("-")
     }
     println("|")
-    val playerwinprob = "%1.5f".format(players.head.points.toFloat / numtrial.toFloat)
-    val odds = "%1.4f".format((numtrial - players.head.points).toFloat / players.head.points.toFloat)
-    println("player ("+players.head+")  - community "+communityrequest+" - enemies ("+players.drop(1).mkString(", ")+")")
-    println("p="+playerwinprob+", odds: "+odds+" to 1")
+    val playerwinprob = "%1.5f".format(players.head.points.toFloat / numtrial.toFloat)     // The amount of times won for our player divided by the total number of trials
+    val tieprob = "%1.5f".format(ties.toFloat / numtrial.toFloat)                          // The amount of ties divided by the total number of trials
+    val odds = "%1.4f".format((numtrial - players.head.points).toFloat / players.head.points.toFloat)    // Odds to compare with the pot odds
+    println("odds "+odds+" to 1, Pwin="+playerwinprob+", Ptie="+tieprob+"")
   }
 }
