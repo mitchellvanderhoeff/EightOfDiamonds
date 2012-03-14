@@ -55,6 +55,10 @@ object Deck {
     result
   }
 
+  def dealString(amount:Int):String = {
+    deal(amount).mkString(" ")
+  }
+
   private def removecard(card:Card):Card = {
     cards = cards.filterNot(card == _)
     card
@@ -64,7 +68,7 @@ object Deck {
    * This is basically a List.find, but then for cards
    */
 
-  def lookup(condition:(Card => Boolean), rs:(String, String)):Option[Card] = {
+  def lookup(condition:(Card => Boolean)):Option[Card] = {
     val fetched = cards.filter(condition(_))
     if(fetched.isEmpty) return None                                             // If this happens, the Calculation class will re-search all the cards again
     val fetchedcard = fetched(Random.nextInt(fetched.length))
@@ -76,12 +80,12 @@ object Deck {
       case ("X", "x") =>                                                // Nothing is specified
         Some(Deck.deal(1)(0))
       case ("X", checksuit) =>                                          // Only suit is specified
-        lookup((c => c.suit == checksuit), rs)
+        lookup((c => c.suit == checksuit))
       case (checkrank, "x") =>                                          // Only rank is specified
-        lookup((c => c.rank == checkrank), rs)
+        lookup((c => c.rank == checkrank))
       case (checkrank, checksuit) =>                                    // Both rank and suit are specified
         lookup((c => c.rank == checkrank
-                 && c.suit == checksuit), rs)
+                 && c.suit == checksuit))
     }
   }
 
