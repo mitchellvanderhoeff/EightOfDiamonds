@@ -40,8 +40,8 @@ object Score {
   /**
    * All the check functions abide the following model
    * - Check Hand to see if it contains your combination
-   * - If it does, return the monad Some(combination plus kickers), so that we may compare several hands of the same combination
-   * - If it does not, return the monad None
+   * - If it does, return the option Some(combination plus kickers), so that we may compare several hands of the same combination
+   * - If it does not, return the option None
    * This ensures that I never have to return 'null' if I cannot find the combination.
    */
 
@@ -95,7 +95,7 @@ object Score {
 
   /**
    * hand.flushes is simply a list of all the flushes present in the hand.
-   * If it is empty, this function returns none immediately. If it is not, it returns the highest flush present.
+   * If it is empty, this function returns None immediately. If it is not, it returns the highest flush present.
    */
 
   def checkflush(hand:Hand):Option[List[Int]] = {

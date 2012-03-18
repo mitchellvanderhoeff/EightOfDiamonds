@@ -1,11 +1,15 @@
 package main
 
+/*
+ * All the important hand traits are precalculated here so that it easier for the Score class to determine the score of the hand.
+ */
+
 
 /**
  * A collection of all the possible straights by card index
  */
 object Hand {
-  val possiblestraights = (0 to 9).map(
+  val possiblestraights = (0 to 8).map(
     a => (0 to 4).map (
        b => a + b
     )
@@ -19,7 +23,9 @@ case class Hand(cards:List[Card]) {
   val values:List[Int] = cards.map(_.index).sorted
 
   val kickers:List[Int] = values.reverse
-
+  /*
+   * Frequencies of card indices used to detect pairs, trips, quads.
+   */
   val frequencies:List[(Int, Int)] = {
     cards
       .map(card => card.index)

@@ -1,6 +1,7 @@
 package main
 
 /**
+ * This class is used for myself to spot errors. So now i could delete this class completely cause the program is finished.
  * Very simple case class to keep count of a certain object
  */
 class Countable[T](val content:T = null, var count:Int = 0) {
@@ -18,7 +19,7 @@ class Countable[T](val content:T = null, var count:Int = 0) {
 object Test{
 
   /**
-   * This is to check whether my check functions are a 100% consistent. The proportions are precalculated.
+   * This is to check whether my check functions are a 100% consistent. The proportions have been precalculated.
    */
 
   def calculateScoreDistribution(numtrial:Int) {
